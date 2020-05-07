@@ -25,7 +25,7 @@ under the License.
 * This will be replaced by the TOC
 {:toc}
 
-SELECT 查询需要使用 `TableEnvironment` 的 `sqlQuery()` 方法加以指定。这个方法会以 `Table` 的形式返回 SELECT 的查询结果。 `Table` 可以被用于 [随后的SQL 与 Table API 查询]({{ site.baseurl }}/zh/dev/table/common.html#mixing-table-api-and-sql) 、 [转换为 DataSet 或 DataStream ]({{ site.baseurl }}/zh/dev/table/common.html#integration-with-datastream-and-dataset-api)或 [输出到 TableSink ]({{ site.baseurl }}/dev/table/common.html#emit-a-table))。SQL 与 Table API 的查询可以进行无缝融合、整体优化并翻译为单一的程序。
+SELECT 查询需要使用 `TableEnvironment` 的 `sqlQuery()` 方法加以指定。这个方法会以 `Table` 的形式返回 SELECT 的查询结果。 `Table` 可以被用于 [随后的SQL 与 Table API 查询]({{ site.baseurl }}/zh/dev/table/common.html#mixing-table-api-and-sql) 、 [转换为 DataSet 或 DataStream ]({{ site.baseurl }}/zh/dev/table/common.html#integration-with-datastream-and-dataset-api)或 [输出到 TableSink ]({{ site.baseurl }}/zh/dev/table/common.html#emit-a-table)。SQL 与 Table API 的查询可以进行无缝融合、整体优化并翻译为单一的程序。
 
 为了可以在 SQL 查询中访问到表，你需要先 [在 TableEnvironment 中注册表 ]({{ site.baseurl }}/zh/dev/table/common.html#register-tables-in-the-catalog)。表可以通过 [TableSource]({{ site.baseurl }}/zh/dev/table/common.html#register-a-tablesource)、 [Table]({{ site.baseurl }}/zh/dev/table/common.html#register-a-table)、[CREATE TABLE 语句](create.html)、 [DataStream 或 DataSet]({{ site.baseurl }}/zh/dev/table/common.html#register-a-datastream-or-dataset-as-table) 注册。 用户也可以通过 [向 TableEnvironment 中注册 catalog ]({{ site.baseurl }}/zh/dev/table/catalogs.html) 的方式指定数据源的位置。
 
@@ -47,13 +47,13 @@ StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env);
 DataStream<Tuple3<Long, String, Integer>> ds = env.addSource(...);
 
 // 使用 SQL 查询内联的（未注册的）表
-Table table = tableEnv.fromDataStream(ds, "user, product, amount");
+Table table = tableEnv.fromDataStream(ds, $("user"), $("product"), $("amount"));
 Table result = tableEnv.sqlQuery(
   "SELECT SUM(amount) FROM " + table + " WHERE product LIKE '%Rubber%'");
 
 // SQL 查询一个已经注册的表
 // 根据视图 "Orders" 创建一个 DataStream
-tableEnv.createTemporaryView("Orders", ds, "user, product, amount");
+tableEnv.createTemporaryView("Orders", ds, $("user"), $("product"), $("amount"));
 // 在表上执行 SQL 查询并得到以新表返回的结果
 Table result2 = tableEnv.sqlQuery(
   "SELECT product, amount FROM Orders WHERE product LIKE '%Rubber%'");
@@ -84,13 +84,13 @@ val tableEnv = StreamTableEnvironment.create(env)
 val ds: DataStream[(Long, String, Integer)] = env.addSource(...)
 
 // 使用 SQL 查询内联的（未注册的）表
-val table = ds.toTable(tableEnv, 'user, 'product, 'amount)
+val table = ds.toTable(tableEnv, $"user", $"product", $"amount")
 val result = tableEnv.sqlQuery(
   s"SELECT SUM(amount) FROM $table WHERE product LIKE '%Rubber%'")
 
 // SQL 查询一个已经注册的表
 // 使用名称 "Orders" 注册一个 DataStream 
-tableEnv.createTemporaryView("Orders", ds, 'user, 'product, 'amount)
+tableEnv.createTemporaryView("Orders", ds, $"user", $"product", $"amount")
 // 在表上执行 SQL 查询并得到以新表返回的结果
 val result2 = tableEnv.sqlQuery(
   "SELECT product, amount FROM Orders WHERE product LIKE '%Rubber%'")
@@ -406,7 +406,7 @@ SELECT PRETTY_PRINT(user) FROM Orders
       <td>
         <strong>GroupBy 聚合</strong><br>
         <span class="label label-primary">批处理</span> <span class="label label-primary">流处理</span><br>
-        <span class="label label-info">可自动更新结果</span>
+        <span class="label label-info">结果更新</span>
       </td>
       <td>
         <p><b>注意：</b> GroupBy 在流处理表中会产生更新结果（updating result）。详情请阅读 <a href="{{ site.baseurl }}/zh/dev/table/streaming/dynamic_tables.html">动态表流概念</a> 。
@@ -459,7 +459,7 @@ WINDOW w AS (
       <td>
         <strong>Distinct</strong><br>
         <span class="label label-primary">批处理</span> <span class="label label-primary">流处理</span> <br>
-        <span class="label label-info">可自动更新结果</span>
+        <span class="label label-info">结果更新</span>
       </td>
       <td>
 {% highlight sql %}
@@ -471,7 +471,8 @@ SELECT DISTINCT users FROM Orders
     <tr>
       <td>
         <strong>Grouping sets, Rollup, Cube</strong><br>
-        <span class="label label-primary">批处理</span>
+        <span class="label label-primary">批处理</span> <span class="label label-primary">流处理</span>
+        <span class="label label-info">结果更新</span>
       </td>
       <td>
 {% highlight sql %}
@@ -479,6 +480,7 @@ SELECT SUM(amount)
 FROM Orders
 GROUP BY GROUPING SETS ((user), (product))
 {% endhighlight %}
+        <p><b>Note:</b> 流式 Grouping sets、Rollup 以及 Cube 只在 Blink planner 中支持。</p>
       </td>
     </tr>
     <tr>
@@ -545,7 +547,7 @@ FROM Orders INNER JOIN Product ON Orders.productId = Product.id
       <td><strong>Outer Equi-join</strong><br>
         <span class="label label-primary">批处理</span>
         <span class="label label-primary">流处理</span>
-        <span class="label label-info">可自动更新结果</span>
+        <span class="label label-info">结果更新</span>
       </td>
       <td>
         <p>目前仅支持 equi-join ，即 join 的联合条件至少拥有一个相等谓词。不支持任何 cross join 和 theta join。</p>
@@ -560,7 +562,7 @@ FROM Orders RIGHT JOIN Product ON Orders.productId = Product.id
 SELECT *
 FROM Orders FULL OUTER JOIN Product ON Orders.productId = Product.id
 {% endhighlight %}
-        <p><b>注意：</b> 流查询中可能会因为不同行的输入数量导致计算结果的状态无限增长。请提供具有有效保留间隔的查询配置，以防止出现过多的状态。详情请参考 <a href="{{ site.baseurl }}zh//dev/table/streaming/query_configuration.html">查询配置</a> 页面.</p>
+        <p><b>注意：</b> 流查询中可能会因为不同行的输入数量导致计算结果的状态无限增长。请提供具有有效保留间隔的查询配置，以防止出现过多的状态。详情请参考 <a href="{{ site.baseurl }}/zh/dev/table/streaming/query_configuration.html">查询配置</a> 页面.</p>
       </td>
     </tr>
     <tr>
@@ -869,7 +871,7 @@ WHERE rownum <= N [AND conditions]
 - `WHERE rownum <= N`: Flink 需要 `rownum <= N` 才能识别一个查询是否为 Top-N 查询。 其中， N 代表最大或最小的 N 条记录会被保留。
 - `[AND conditions]`: 在 where 语句中，可以随意添加其他的查询条件，但其他条件只允许通过 `AND` 与 `rownum <= N` 结合使用。
 
-<span class="label label-danger">流处理模式需注意</span> TopN 查询 <span class="label label-info">可自动更新结果</span>。 Flink SQL 会根据排序键对输入的流进行排序；若 top N 的记录发生了变化，变化的部分会以撤销、更新记录的形式发送到下游。
+<span class="label label-danger">流处理模式需注意</span> TopN 查询的结果会带有更新。 Flink SQL 会根据排序键对输入的流进行排序；若 top N 的记录发生了变化，变化的部分会以撤销、更新记录的形式发送到下游。
 推荐使用一个支持更新的存储作为 Top-N 查询的 sink 。另外，若 top N 记录需要存储到外部存储，则结果表需要拥有相同与 Top-N 查询相同的唯一键。
 
 Top-N 的唯一键是分区列和 rownum 列的结合，另外 Top-N 查询也可以获得上游的唯一键。以下面的任务为例，`product_id` 是 `ShopSales` 的唯一键，然后 Top-N 的唯一键是 [`category`, `rownum`] 和 [`product_id`] 。
@@ -906,7 +908,7 @@ val tableEnv = TableEnvironment.getTableEnvironment(env)
 // 读取外部数据源的 DataStream
 val ds: DataStream[(String, String, String, Long)] = env.addSource(...)
 // 注册名为 “ShopSales” 的 DataStream
-tableEnv.createTemporaryView("ShopSales", ds, 'product_id, 'category, 'product_name, 'sales)
+tableEnv.createTemporaryView("ShopSales", ds, $"product_id", $"category", $"product_name", $"sales")
 
 
 // 选择每个分类中销量前5的产品
@@ -940,7 +942,7 @@ StreamTableEnvironment tableEnv = TableEnvironment.getTableEnvironment(env);
 // 从外部数据源读取 DataStream
 DataStream<Tuple3<String, String, String, Long>> ds = env.addSource(...);
 // 把 DataStream 注册为表，表名是 “ShopSales”
-tableEnv.createTemporaryView("ShopSales", ds, "product_id, category, product_name, sales");
+tableEnv.createTemporaryView("ShopSales", ds, $("product_id"), $("category"), $("product_name"), $("sales"));
 
 // 选择每个分类中销量前5的产品
 Table result1 = tableEnv.sqlQuery(
@@ -961,7 +963,7 @@ val tableEnv = TableEnvironment.getTableEnvironment(env)
 // 从外部数据源读取 DataStream
 val ds: DataStream[(String, String, String, Long)] = env.addSource(...)
 // 注册名为 “ShopSales” 的数据源
-tableEnv.createTemporaryView("ShopSales", ds, 'product_id, 'category, 'product_name, 'sales)
+tableEnv.createTemporaryView("ShopSales", ds, $"product_id", $"category", $"product_name", $"sales")
 
 
 // 选择每个分类中销量前5的产品
@@ -1005,7 +1007,7 @@ WHERE rownum = 1
 
 - `ROW_NUMBER()`: 从第一行开始，依次为每一行分配一个唯一且连续的号码。
 - `PARTITION BY col1[, col2...]`: 指定分区的列，例如去重的键。
-- `ORDER BY time_attr [asc|desc]`: 指定排序的列。所制定的列必须为 [时间属性](streaming/time_attributes.html)。目前仅支持 [proctime attribute](streaming/time_attributes.html#processing-time)，在未来版本中将会支持 [Rowtime atttribute](streaming/time_attributes.html#event-time) 。升序（ ASC ）排列指只保留第一行，而降序排列（ DESC ）则指保留最后一行。
+- `ORDER BY time_attr [asc|desc]`: 指定排序的列。所制定的列必须为 [时间属性]({{ site.baseurl }}/zh/dev/table/streaming/time_attributes.html)。目前仅支持 [proctime attribute]({{ site.baseurl }}/zh/dev/table/streaming/time_attributes.html#processing-time)，在未来版本中将会支持 [Rowtime atttribute]({{ site.baseurl }}/zh/dev/table/streaming/time_attributes.html#event-time) 。升序（ ASC ）排列指只保留第一行，而降序排列（ DESC ）则指保留最后一行。
 - `WHERE rownum = 1`: Flink 需要 `rownum = 1` 以确定该查询是否为去重查询。
 
 以下的例子描述了如何指定 SQL 查询以在一个流计算表中进行去重操作。
@@ -1019,7 +1021,7 @@ StreamTableEnvironment tableEnv = TableEnvironment.getTableEnvironment(env);
 // 从外部数据源读取 DataStream
 DataStream<Tuple3<String, String, String, Integer>> ds = env.addSource(...);
 // 注册名为 “Orders” 的 DataStream
-tableEnv.createTemporaryView("Orders", ds, "order_id, user, product, number, proctime.proctime");
+tableEnv.createTemporaryView("Orders", ds, $("order_id"), $("user"), $("product"), $("number"), $("proctime").proctime());
 
 // 由于不应该出现两个订单有同一个order_id，所以根据 order_id 去除重复的行，并保留第一行
 Table result1 = tableEnv.sqlQuery(
@@ -1040,7 +1042,7 @@ val tableEnv = TableEnvironment.getTableEnvironment(env)
 // 从外部数据源读取 DataStream
 val ds: DataStream[(String, String, String, Int)] = env.addSource(...)
 // 注册名为 “Orders” 的 DataStream
-tableEnv.createTemporaryView("Orders", ds, 'order_id, 'user, 'product, 'number, 'proctime.proctime)
+tableEnv.createTemporaryView("Orders", ds, $"order_id", $"user", $"product", $"number", $"proctime".proctime)
 
 // 由于不应该出现两个订单有同一个order_id，所以根据 order_id 去除重复的行，并保留第一行
 val result1 = tableEnv.sqlQuery(
@@ -1088,7 +1090,7 @@ SQL 查询的分组窗口是通过 `GROUP BY` 子句定义的。类似于使用�
 
 #### 时间属性
 
-在流处理表中的 SQL 查询中，分组窗口函数的 `time_attr` 参数必须引用一个合法的时间属性，且该属性需要指定行的处理时间或事件时间。可参考 [时间属性文档](streaming/time_attributes.html) 以了解如何定义时间属性。
+在流处理表中的 SQL 查询中，分组窗口函数的 `time_attr` 参数必须引用一个合法的时间属性，且该属性需要指定行的处理时间或事件时间。可参考 [时间属性文档]({{ site.baseurl }}/zh/dev/table/streaming/time_attributes.html) 以了解如何定义时间属性。
 
 对于批处理的 SQL 查询，分组窗口函数的 `time_attr` 参数必须是一个 `TIMESTAMP` 类型的属性。
 
@@ -1155,7 +1157,7 @@ StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env);
 // 从外部数据源读取 DataSource
 DataStream<Tuple3<Long, String, Integer>> ds = env.addSource(...);
 // 使用“Orders”作为表名把 DataStream 注册为表
-tableEnv.createTemporaryView("Orders", ds, "user, product, amount, proctime.proctime, rowtime.rowtime");
+tableEnv.createTemporaryView("Orders", ds, $("user"), $("product"), $("amount"), $("proctime").proctime(), $("rowtime").rowtime());
 
 // 计算每日的 SUM(amount)（使用事件时间）
 Table result1 = tableEnv.sqlQuery(
@@ -1192,7 +1194,7 @@ val tableEnv = StreamTableEnvironment.create(env)
 // 从外部数据源读取 DataSource
 val ds: DataStream[(Long, String, Int)] = env.addSource(...)
 // 计算每日（使用处理时间）的 SUM(amount) 
-tableEnv.createTemporaryView("Orders", ds, 'user, 'product, 'amount, 'proctime.proctime, 'rowtime.rowtime)
+tableEnv.createTemporaryView("Orders", ds, $"user", $"product", $"amount", $"proctime".proctime, $"rowtime".rowtime)
 
 // 计算每日的 SUM(amount) （使用事件时间）
 val result1 = tableEnv.sqlQuery(

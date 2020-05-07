@@ -1,7 +1,7 @@
 ---
-title: "Connect to External Systems"
-nav-parent_id: tableapi
-nav-pos: 50
+title: "Table API Connectors"
+nav-parent_id: connectors-root
+nav-pos: 2
 ---
 <!--
 Licensed to the Apache Software Foundation (ASF) under one
@@ -43,23 +43,24 @@ The following tables list all available connectors and formats. Their mutual com
 | Name              | Version             | Maven dependency             | SQL Client JAR         |
 | :---------------- | :------------------ | :--------------------------- | :----------------------|
 | Filesystem        |                     | Built-in                     | Built-in               |
-| Elasticsearch     | 6                   | `flink-connector-elasticsearch6` | [Download](http://central.maven.org/maven2/org/apache/flink/flink-sql-connector-elasticsearch6{{site.scala_version_suffix}}/{{site.version}}/flink-sql-connector-elasticsearch6{{site.scala_version_suffix}}-{{site.version}}.jar) |
-| Apache Kafka      | 0.8                 | `flink-connector-kafka-0.8`  | Not available          |
-| Apache Kafka      | 0.9                 | `flink-connector-kafka-0.9`  | [Download](http://central.maven.org/maven2/org/apache/flink/flink-sql-connector-kafka-0.9{{site.scala_version_suffix}}/{{site.version}}/flink-sql-connector-kafka-0.9{{site.scala_version_suffix}}-{{site.version}}.jar) |
-| Apache Kafka      | 0.10                | `flink-connector-kafka-0.10` | [Download](http://central.maven.org/maven2/org/apache/flink/flink-sql-connector-kafka-0.10{{site.scala_version_suffix}}/{{site.version}}/flink-sql-connector-kafka-0.10{{site.scala_version_suffix}}-{{site.version}}.jar) |
-| Apache Kafka      | 0.11                | `flink-connector-kafka-0.11` | [Download](http://central.maven.org/maven2/org/apache/flink/flink-sql-connector-kafka-0.11{{site.scala_version_suffix}}/{{site.version}}/flink-sql-connector-kafka-0.11{{site.scala_version_suffix}}-{{site.version}}.jar) |
-| Apache Kafka      | 0.11+ (`universal`) | `flink-connector-kafka`      | [Download](http://central.maven.org/maven2/org/apache/flink/flink-sql-connector-kafka{{site.scala_version_suffix}}/{{site.version}}/flink-sql-connector-kafka{{site.scala_version_suffix}}-{{site.version}}.jar) |
-| HBase             | 1.4.3               | `flink-hbase`                | [Download](http://central.maven.org/maven2/org/apache/flink/flink-hbase{{site.scala_version_suffix}}/{{site.version}}/flink-hbase{{site.scala_version_suffix}}-{{site.version}}.jar) |
-| JDBC              |                     | `flink-jdbc`                 | [Download](http://central.maven.org/maven2/org/apache/flink/flink-jdbc{{site.scala_version_suffix}}/{{site.version}}/flink-jdbc{{site.scala_version_suffix}}-{{site.version}}.jar) |
+| Elasticsearch     | 6                   | `flink-connector-elasticsearch6` | [Download](https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-elasticsearch6{{site.scala_version_suffix}}/{{site.version}}/flink-sql-connector-elasticsearch6{{site.scala_version_suffix}}-{{site.version}}.jar) |
+| Elasticsearch     | 7                   | `flink-connector-elasticsearch7` | [Download](https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-elasticsearch7{{site.scala_version_suffix}}/{{site.version}}/flink-sql-connector-elasticsearch7{{site.scala_version_suffix}}-{{site.version}}.jar) |
+| Apache Kafka      | 0.10                | `flink-connector-kafka-0.10` | [Download](https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka-0.10{{site.scala_version_suffix}}/{{site.version}}/flink-sql-connector-kafka-0.10{{site.scala_version_suffix}}-{{site.version}}.jar) |
+| Apache Kafka      | 0.11                | `flink-connector-kafka-0.11` | [Download](https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka-0.11{{site.scala_version_suffix}}/{{site.version}}/flink-sql-connector-kafka-0.11{{site.scala_version_suffix}}-{{site.version}}.jar) |
+| Apache Kafka      | 0.11+ (`universal`) | `flink-connector-kafka`      | [Download](https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka{{site.scala_version_suffix}}/{{site.version}}/flink-sql-connector-kafka{{site.scala_version_suffix}}-{{site.version}}.jar) |
+| HBase             | 1.4.3               | `flink-hbase`                | [Download](https://repo.maven.apache.org/maven2/org/apache/flink/flink-hbase{{site.scala_version_suffix}}/{{site.version}}/flink-hbase{{site.scala_version_suffix}}-{{site.version}}.jar) |
+| JDBC              |                     | `flink-jdbc`                 | [Download](https://repo.maven.apache.org/maven2/org/apache/flink/flink-jdbc{{site.scala_version_suffix}}/{{site.version}}/flink-jdbc{{site.scala_version_suffix}}-{{site.version}}.jar) |
 
 ### Formats
 
 | Name                       | Maven dependency             | SQL Client JAR         |
 | :------------------------- | :--------------------------- | :--------------------- |
 | Old CSV (for files)        | Built-in                     | Built-in               |
-| CSV (for Kafka)            | `flink-csv`                  | [Download](http://central.maven.org/maven2/org/apache/flink/flink-csv/{{site.version}}/flink-csv-{{site.version}}-sql-jar.jar) |
-| JSON                       | `flink-json`                 | [Download](http://central.maven.org/maven2/org/apache/flink/flink-json/{{site.version}}/flink-json-{{site.version}}-sql-jar.jar) |
-| Apache Avro                | `flink-avro`                 | [Download](http://central.maven.org/maven2/org/apache/flink/flink-avro/{{site.version}}/flink-avro-{{site.version}}-sql-jar.jar) |
+| CSV (for Kafka)            | `flink-csv`                  | [Download](https://repo.maven.apache.org/maven2/org/apache/flink/flink-csv/{{site.version}}/flink-csv-{{site.version}}-sql-jar.jar) |
+| JSON                       | `flink-json`                 | [Download](https://repo.maven.apache.org/maven2/org/apache/flink/flink-json/{{site.version}}/flink-json-{{site.version}}-sql-jar.jar) |
+| Apache Avro                | `flink-avro`                 | [Download](https://repo.maven.apache.org/maven2/org/apache/flink/flink-avro/{{site.version}}/flink-avro-{{site.version}}-sql-jar.jar) |
+| Apache ORC                 | `flink-orc`                  | [Download](https://repo.maven.apache.org/maven2/org/apache/flink/flink-orc{{site.scala_version_suffix}}/{{site.version}}/flink-orc{{site.scala_version_suffix}}-{{site.version}}-jar-with-dependencies.jar) |
+| Apache Parquet             | `flink-parquet`              | [Download](https://repo.maven.apache.org/maven2/org/apache/flink/flink-parquet{{site.scala_version_suffix}}/{{site.version}}/flink-parquet{{site.scala_version_suffix}}-{{site.version}}-jar-with-dependencies.jar) |
 
 {% else %}
 
@@ -161,7 +162,6 @@ CREATE TABLE MyUserTable (
   'connector.version' = '0.10',
   'connector.topic' = 'topic_name',
   'connector.startup-mode' = 'earliest-offset',
-  'connector.properties.zookeeper.connect' = 'localhost:2181',
   'connector.properties.bootstrap.servers' = 'localhost:9092',
 
   -- declare a format for this system
@@ -179,7 +179,6 @@ tableEnvironment
       .version("0.10")
       .topic("test-input")
       .startFromEarliest()
-      .property("zookeeper.connect", "localhost:2181")
       .property("bootstrap.servers", "localhost:9092")
   )
 
@@ -213,7 +212,6 @@ table_environment \
         .version("0.10")
         .topic("test-input")
         .start_from_earliest()
-        .property("zookeeper.connect", "localhost:2181")
         .property("bootstrap.servers", "localhost:9092")
     ) \
     .with_format(  # declare a format for this system
@@ -248,7 +246,6 @@ tables:
       topic: test-input
       startup-mode: earliest-offset
       properties:
-        zookeeper.connect: localhost:2181
         bootstrap.servers: localhost:9092
 
     # declare a format for this system
@@ -775,17 +772,18 @@ CREATE TABLE MyUserTable (
 
   'connector.topic' = 'topic_name', -- required: topic name from which the table is read
 
-  -- required: specify the ZooKeeper connection string
-  'connector.properties.zookeeper.connect' = 'localhost:2181',
   -- required: specify the Kafka server connection string
   'connector.properties.bootstrap.servers' = 'localhost:9092',
   -- required for Kafka source, optional for Kafka sink, specify consumer group
   'connector.properties.group.id' = 'testGroup',
-  -- optional: valid modes are "earliest-offset", "latest-offset", "group-offsets", or "specific-offsets"
+  -- optional: valid modes are "earliest-offset", "latest-offset", "group-offsets", "specific-offsets" or "timestamp"
   'connector.startup-mode' = 'earliest-offset',
 
   -- optional: used in case of startup mode with specific offsets
   'connector.specific-offsets' = 'partition:0,offset:42;partition:1,offset:300',
+
+  -- optional: used in case of startup mode with timestamp
+  'connector.startup-timestamp-millis' = '1578538374471',
 
   'connector.sink-partitioner' = '...',  -- optional: output partitioning from Flink's partitions 
                                          -- into Kafka's partitions valid are "fixed" 
@@ -813,7 +811,6 @@ CREATE TABLE MyUserTable (
     .topic("...")       // required: topic name from which the table is read
 
     // optional: connector specific properties
-    .property("zookeeper.connect", "localhost:2181")
     .property("bootstrap.servers", "localhost:9092")
     .property("group.id", "testGroup")
 
@@ -821,6 +818,7 @@ CREATE TABLE MyUserTable (
     .startFromEarliest()
     .startFromLatest()
     .startFromSpecificOffsets(...)
+    .startFromTimestamp(...)
 
     // optional: output partitioning from Flink's partitions into Kafka's partitions
     .sinkPartitionerFixed()         // each Flink partition ends up in at-most one Kafka partition (default)
@@ -842,7 +840,6 @@ CREATE TABLE MyUserTable (
     .topic("...")     # required: topic name from which the table is read
     
     # optional: connector specific properties
-    .property("zookeeper.connect", "localhost:2181")
     .property("bootstrap.servers", "localhost:9092")
     .property("group.id", "testGroup")
 
@@ -850,6 +847,7 @@ CREATE TABLE MyUserTable (
     .start_from_earliest()
     .start_from_latest()
     .start_from_specific_offsets(...)
+    .start_from_timestamp(...)
 
     # optional: output partitioning from Flink's partitions into Kafka's partitions
     .sink_partitioner_fixed()        # each Flink partition ends up in at-most one Kafka partition (default)
@@ -871,14 +869,14 @@ connector:
   topic: ...          # required: topic name from which the table is read
 
   properties:
-    zookeeper.connect: localhost:2181  # required: specify the ZooKeeper connection string
     bootstrap.servers: localhost:9092  # required: specify the Kafka server connection string
     group.id: testGroup                # optional: required in Kafka consumer, specify consumer group
 
   startup-mode: ...                                               # optional: valid modes are "earliest-offset", "latest-offset",
-                                                                  # "group-offsets", or "specific-offsets"
+                                                                  # "group-offsets", "specific-offsets" or "timestamp"
   specific-offsets: partition:0,offset:42;partition:1,offset:300  # optional: used in case of startup mode with specific offsets
-  
+  startup-timestamp-millis: 1578538374471                         # optional: used in case of startup mode with timestamp
+
   sink-partitioner: ...    # optional: output partitioning from Flink's partitions into Kafka's partitions
                            # valid are "fixed" (each Flink partition ends up in at most one Kafka partition),
                            # "round-robin" (a Flink partition is distributed to Kafka partitions round-robin)
@@ -932,7 +930,17 @@ CREATE TABLE MyUserTable (
   
   'connector.hosts' = 'http://host_name:9092;http://host_name:9093',  -- required: one or more Elasticsearch hosts to connect to
 
-  'connector.index' = 'MyUsers',       -- required: Elasticsearch index
+  'connector.index' = 'myusers',       -- required: Elasticsearch index. Flink supports both static index and dynamic index.
+                                       -- If you want to have a static index, this option value should be a plain string, 
+                                       -- e.g. 'myusers', all the records will be consistently written into "myusers" index.
+                                       -- If you want to have a dynamic index, you can use '{field_name}' to reference a field
+                                       -- value in the record to dynamically generate a target index. You can also use 
+                                       -- '{field_name|date_format_string}' to convert a field value of TIMESTAMP/DATE/TIME type
+                                       -- into the format specified by date_format_string. The date_format_string is 
+                                       -- compatible with Java's [DateTimeFormatter](https://docs.oracle.com/javase/8/docs/api/index.html).
+                                       -- For example, if the option value is 'myusers-{log_ts|yyyy-MM-dd}', then a 
+                                       -- record with log_ts field value 2020-03-27 12:25:55 will be written into 
+                                       -- "myusers-2020-03-27" index.
 
   'connector.document-type' = 'user',  -- required: Elasticsearch document type
 
@@ -963,11 +971,11 @@ CREATE TABLE MyUserTable (
                                               -- per bulk request
                                               -- (only MB granularity is supported)
   'connector.bulk-flush.interval' = '60000',  -- optional: bulk flush interval (in milliseconds)
-  'connector.bulk-flush.back-off.type' = '...',       -- optional: backoff strategy ("disabled" by default)
+  'connector.bulk-flush.backoff.type' = '...',       -- optional: backoff strategy ("disabled" by default)
                                                       -- valid strategies are "disabled", "constant",
                                                       -- or "exponential"
-  'connector.bulk-flush.back-off.max-retries' = '3',  -- optional: maximum number of retries
-  'connector.bulk-flush.back-off.delay' = '30000',    -- optional: delay between each backoff attempt
+  'connector.bulk-flush.backoff.max-retries' = '3',  -- optional: maximum number of retries
+  'connector.bulk-flush.backoff.delay' = '30000',    -- optional: delay between each backoff attempt
                                                       -- (in milliseconds)
 
   -- optional: connection properties to be used during REST communication to Elasticsearch
@@ -1193,6 +1201,27 @@ CREATE TABLE MyUserTable (
 )
 {% endhighlight %}
 </div>
+<div data-lang="python" markdown="1">
+{% highlight python%}
+.connect(
+    HBase()
+    .version('1.4.3')                      # required: currently only support '1.4.3'
+    .table_name('hbase_table_name')        # required: HBase table name
+    .zookeeper_quorum('localhost:2181')    # required: HBase Zookeeper quorum configuration
+    .zookeeper_node_parent('/test')        # optional: the root dir in Zookeeper for Hbae cluster.
+                                           # The default value is '/hbase'
+    .write_buffer_flush_max_size('10mb')   # optional: writing option, determines how many size in memory of buffered
+                                           # rows to insert per round trip. This can help performance on writing to JDBC
+                                           # database. The default value is '2mb'
+    .write_buffer_flush_max_rows(1000)     # optional: writing option, determines how many rows to insert per round trip.
+                                           # This can help performance on writing to JDBC database. No default value,
+                                           # i.e. the default flushing is not depends on the number of buffered rows.
+    .write_buffer_flush_interval('2s')     # optional: writing option, sets a flush interval flushing buffered requesting
+                                           # if the interval passes, in milliseconds. Default value is '0s', which means
+                                           # no asynchronous flush thread will he scheduled.
+)
+{% endhighlight%}
+</div>
 <div data-lang="YAML" markdown="1">
 {% highlight yaml %}
 connector:
@@ -1246,9 +1275,13 @@ To use JDBC connector, need to choose an actual driver to use. Here are drivers 
 
 | Name        |      Group Id      |      Artifact Id     |      JAR         |
 | :-----------| :------------------| :--------------------| :----------------|
-| MySQL       |        mysql       | mysql-connector-java | [Download](http://central.maven.org/maven2/mysql/mysql-connector-java/) |
+| MySQL       |        mysql       | mysql-connector-java | [Download](https://repo.maven.apache.org/maven2/mysql/mysql-connector-java/) |
 | PostgreSQL  |   org.postgresql   |      postgresql      | [Download](https://jdbc.postgresql.org/download.html) |
 | Derby       |  org.apache.derby  |        derby         | [Download](http://db.apache.org/derby/derby_downloads.html) |
+
+**Catalog**
+
+JDBC Connector can be used together with [`JDBCCatalog`]({{ site.baseurl }}/dev/table/catalogs.html#jdbccatalog) to greatly simplify development effort and improve user experience.
 
 <br/>
 
@@ -1420,26 +1453,28 @@ The CSV format can be used as follows:
 CREATE TABLE MyUserTable (
   ...
 ) WITH (
-  'format.type' = 'csv',                  -- required: specify the schema type
+  'format.type' = 'csv',                      -- required: specify the schema type
 
-  'format.field-delimiter' = ';',         -- optional: field delimiter character (',' by default)
+  'format.field-delimiter' = ';',             -- optional: field delimiter character (',' by default)
 
-  'format.line-delimiter' = U&'\000D\000A',  -- optional: line delimiter ("\n" by default, otherwise
-                                          -- "\r" or "\r\n" are allowed), unicode is supported if
-                                          -- the delimiter is an invisible special character,
-                                          -- e.g. U&'\000D' is the unicode representation of carriage return "\r"
-                                          -- e.g. U&'\000A' is the unicode representation of line feed "\n"
-  'format.quote-character' = '''',        -- optional: quote character for enclosing field values ('"' by default)
-  'format.allow-comments' = 'true',       -- optional: ignores comment lines that start with "#"
-                                          -- (disabled by default);
-                                          -- if enabled, make sure to also ignore parse errors to allow empty rows
-  'format.ignore-parse-errors' = 'true',  -- optional: skip fields and rows with parse errors instead of failing;
-                                          -- fields are set to null in case of errors
-  'format.array-element-delimiter' = '|', -- optional: the array element delimiter string for separating
-                                          -- array and row element values (";" by default)
-  'format.escape-character' = '\\',       -- optional: escape character for escaping values (disabled by default)
-  'format.null-literal' = 'n/a'           -- optional: null literal string that is interpreted as a
-                                          -- null value (disabled by default)
+  'format.line-delimiter' = U&'\000D\000A',   -- optional: line delimiter ("\n" by default, otherwise
+                                              -- "\r" or "\r\n" are allowed), unicode is supported if
+                                              -- the delimiter is an invisible special character,
+                                              -- e.g. U&'\000D' is the unicode representation of carriage return "\r"
+                                              -- e.g. U&'\000A' is the unicode representation of line feed "\n"
+  'format.disable-quote-character' = 'true',  -- optional: disabled quote character for enclosing field values (false by default)
+                                              -- if true, format.quote-character can not be set
+  'format.quote-character' = '''',            -- optional: quote character for enclosing field values ('"' by default)
+  'format.allow-comments' = 'true',           -- optional: ignores comment lines that start with "#"
+                                              -- (disabled by default);
+                                              -- if enabled, make sure to also ignore parse errors to allow empty rows
+  'format.ignore-parse-errors' = 'true',      -- optional: skip fields and rows with parse errors instead of failing;
+                                              -- fields are set to null in case of errors
+  'format.array-element-delimiter' = '|',     -- optional: the array element delimiter string for separating
+                                              -- array and row element values (";" by default)
+  'format.escape-character' = '\\',           -- optional: escape character for escaping values (disabled by default)
+  'format.null-literal' = 'n/a'               -- optional: null literal string that is interpreted as a
+                                              -- null value (disabled by default)
 )
 {% endhighlight %}
 </div>
@@ -1452,6 +1487,8 @@ CREATE TABLE MyUserTable (
     .fieldDelimiter(';')         // optional: field delimiter character (',' by default)
     .lineDelimiter("\r\n")       // optional: line delimiter ("\n" by default;
                                  //   otherwise "\r", "\r\n", or "" are allowed)
+    .disableQuoteCharacter()     // optional: disabled quote character for enclosing field values;
+                                 //   cannot define a quote character and disabled quote character at the same time
     .quoteCharacter('\'')        // optional: quote character for enclosing field values ('"' by default)
     .allowComments()             // optional: ignores comment lines that start with '#' (disabled by default);
                                  //   if enabled, make sure to also ignore parse errors to allow empty rows
@@ -1496,6 +1533,8 @@ format:
   field-delimiter: ";"         # optional: field delimiter character (',' by default)
   line-delimiter: "\r\n"       # optional: line delimiter ("\n" by default;
                                #   otherwise "\r", "\r\n", or "" are allowed)
+  disable-quote-character = true # optional: disabled quote character for enclosing field values (false by default)
+                               # if true, quote-character can not be set
   quote-character: "'"         # optional: quote character for enclosing field values ('"' by default)
   allow-comments: true         # optional: ignores comment lines that start with "#" (disabled by default);
                                #   if enabled, make sure to also ignore parse errors to allow empty rows
@@ -1576,9 +1615,10 @@ CREATE TABLE MyUserTable (
   ...
 ) WITH (
   'format.type' = 'json',                   -- required: specify the format type
-  'format.fail-on-missing-field' = 'true'   -- optional: flag whether to fail if a field is missing or not,
+  'format.fail-on-missing-field' = 'true',  -- optional: flag whether to fail if a field is missing or not,
                                             -- 'false' by default
-
+  'format.ignore-parse-errors' = 'true',    -- optional: skip fields and rows with parse errors instead of failing;
+                                            -- fields are set to null in case of errors
   -- deprecated: define the schema explicitly using JSON schema which parses to DECIMAL and TIMESTAMP.
   'format.json-schema' =
     '{
@@ -1602,7 +1642,8 @@ CREATE TABLE MyUserTable (
 .withFormat(
   new Json()
     .failOnMissingField(true)   // optional: flag whether to fail if a field is missing or not, false by default
-
+    .ignoreParseErrors(true)    // optional: skip fields and rows with parse errors instead of failing;
+                                //   fields are set to null in case of errors
     // deprecated: define the schema explicitly using JSON schema which parses to DECIMAL and TIMESTAMP.
     .jsonSchema(
       "{" +

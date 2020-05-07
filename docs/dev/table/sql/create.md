@@ -181,16 +181,16 @@ Flink provides several commonly used watermark strategies.
 
   Emits a watermark of the maximum observed timestamp so far minus 1. Rows that have a timestamp equal and smaller to the max timestamp are not late.
 
-- Bounded out of orderness timestamps: `WATERMARK FOR rowtime_column AS rowtimeField - INTERVAL 'string' timeUnit`.
+- Bounded out of orderness timestamps: `WATERMARK FOR rowtime_column AS rowtime_column - INTERVAL 'string' timeUnit`.
 
-  Emits watermarks, which are the maximum observed timestamp minus the specified delay, e.g., `WATERMARK FOR rowtime_column AS rowtimeField - INTERVAL '5' SECOND` is a 5 seconds delayed watermark strategy.
+  Emits watermarks, which are the maximum observed timestamp minus the specified delay, e.g., `WATERMARK FOR rowtime_column AS rowtime_column - INTERVAL '5' SECOND` is a 5 seconds delayed watermark strategy.
 
 {% highlight sql %}
 CREATE TABLE Orders (
     user BIGINT,
     product STRING,
     order_time TIMESTAMP(3),
-    WATERMARK FOR order_time AS order_time - '5' SECONDS
+    WATERMARK FOR order_time AS order_time - INTERVAL '5' SECOND
 ) WITH ( . . . );
 {% endhighlight %}
 
@@ -207,6 +207,24 @@ The key and value of expression `key1=val1` should both be string literal. See d
 **Notes:** The table name can be of three formats: 1. `catalog_name.db_name.table_name` 2. `db_name.table_name` 3. `table_name`. For `catalog_name.db_name.table_name`, the table would be registered into metastore with catalog named "catalog_name" and database named "db_name"; for `db_name.table_name`, the table would be registered into the current catalog of the execution table environment and database named "db_name"; for `table_name`, the table would be registered into the current catalog and database of the execution table environment.
 
 **Notes:** The table registered with `CREATE TABLE` statement can be used as both table source and table sink, we can not decide if it is used as a source or sink until it is referenced in the DMLs.
+
+{% top %}
+
+## CREATE CATALOG
+
+{% highlight sql %}
+CREATE CATALOG catalog_name
+  WITH (key1=val1, key2=val2, ...)
+{% endhighlight %}
+
+Create a catalog with the given catalog properties. If a catalog with the same name already exists, an exception is thrown.
+
+**WITH OPTIONS**
+
+Catalog properties used to store extra information related to this catalog.
+The key and value of expression `key1=val1` should both be string literal.
+
+Check out more details at [Catalogs]({{ site.baseurl }}/dev/table/catalogs.html).
 
 {% top %}
 

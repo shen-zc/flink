@@ -18,10 +18,12 @@
 
 package org.apache.flink.table.planner.plan.stream.sql.agg
 
+import org.apache.flink.api.common.time.Time
 import org.apache.flink.api.scala._
 import org.apache.flink.table.api.scala._
 import org.apache.flink.table.api.{TableException, ValidationException}
 import org.apache.flink.table.planner.plan.utils.JavaUserDefinedAggFunctions.WeightedAvgWithMerge
+import org.apache.flink.table.planner.plan.utils.WindowEmitStrategy.{TABLE_EXEC_EMIT_LATE_FIRE_DELAY, TABLE_EXEC_EMIT_LATE_FIRE_ENABLED}
 import org.apache.flink.table.planner.utils.TableTestBase
 
 import org.junit.Test
@@ -386,5 +388,58 @@ class WindowAggregateTest extends TableTestBase {
       """.stripMargin
 
     util.verifyPlan(sql)
+  }
+
+  @Test
+  def testWindowAggregateWithDifferentWindows(): Unit = {
+    // This test ensures that the LogicalWindowAggregate node' digest contains the window specs.
+    // This allows the planner to make the distinction between similar aggregations using different
+    // windows (see FLINK-15577).
+    val sql =
+    """
+      |WITH window_1h AS (
+      |    SELECT 1
+      |    FROM MyTable
+      |    GROUP BY HOP(`rowtime`, INTERVAL '1' HOUR, INTERVAL '1' HOUR)
+      |),
+      |
+      |window_2h AS (
+      |    SELECT 1
+      |    FROM MyTable
+      |    GROUP BY HOP(`rowtime`, INTERVAL '1' HOUR, INTERVAL '2' HOUR)
+      |)
+      |
+      |(SELECT * FROM window_1h)
+      |UNION ALL
+      |(SELECT * FROM window_2h)
+      |""".stripMargin
+
+    util.verifyPlan(sql)
+  }
+
+  @Test
+  def testWindowAggregateWithLateFire(): Unit = {
+    util.conf.getConfiguration.setBoolean(TABLE_EXEC_EMIT_LATE_FIRE_ENABLED, true)
+    util.conf.getConfiguration.setString(TABLE_EXEC_EMIT_LATE_FIRE_DELAY, "5s")
+    util.conf.setIdleStateRetentionTime(Time.hours(1), Time.hours(2))
+    val sql =
+      """
+        |SELECT TUMBLE_START(`rowtime`, INTERVAL '1' SECOND), COUNT(*) cnt
+        |FROM MyTable
+        |GROUP BY TUMBLE(`rowtime`, INTERVAL '1' SECOND)
+        |""".stripMargin
+    util.verifyPlanWithTrait(sql)
+  }
+
+  @Test
+  def testWindowAggregateWithAllowLatenessOnly(): Unit = {
+    util.conf.setIdleStateRetentionTime(Time.hours(1), Time.hours(2))
+    val sql =
+      """
+        |SELECT TUMBLE_START(`rowtime`, INTERVAL '1' SECOND), COUNT(*) cnt
+        |FROM MyTable
+        |GROUP BY TUMBLE(`rowtime`, INTERVAL '1' SECOND)
+        |""".stripMargin
+    util.verifyPlanWithTrait(sql)
   }
 }

@@ -18,27 +18,50 @@
 
 package org.apache.flink.table.planner.runtime.stream.sql;
 
+import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.java.typeutils.runtime.kryo.KryoSerializer;
+import org.apache.flink.table.annotation.DataTypeHint;
+import org.apache.flink.table.annotation.FunctionHint;
+import org.apache.flink.table.annotation.InputGroup;
+import org.apache.flink.table.api.DataTypes;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.ValidationException;
 import org.apache.flink.table.catalog.Catalog;
 import org.apache.flink.table.catalog.CatalogFunction;
+import org.apache.flink.table.catalog.DataTypeFactory;
 import org.apache.flink.table.catalog.ObjectPath;
 import org.apache.flink.table.functions.ScalarFunction;
+import org.apache.flink.table.functions.TableFunction;
+import org.apache.flink.table.planner.codegen.CodeGenException;
 import org.apache.flink.table.planner.factories.utils.TestCollectionTableFactory;
 import org.apache.flink.table.planner.runtime.utils.StreamingTestBase;
+import org.apache.flink.table.types.DataType;
+import org.apache.flink.table.types.inference.TypeInference;
+import org.apache.flink.table.types.inference.TypeStrategies;
+import org.apache.flink.table.types.logical.RawType;
 import org.apache.flink.types.Row;
+import org.apache.flink.util.StringUtils;
 
 import org.junit.Test;
 
-import java.util.ArrayList;
+import java.math.BigDecimal;
+import java.nio.ByteBuffer;
+import java.time.DayOfWeek;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.internal.matchers.ThrowableMessageMatcher.hasMessage;
 
 /**
  * Tests for catalog and system in stream table environment.
@@ -99,7 +122,7 @@ public class FunctionITCase extends StreamingTestBase {
 		} catch (Exception e){
 			assertEquals(e.getMessage(), "Could not execute CREATE CATALOG FUNCTION:" +
 				" (catalogFunction: [Optional[This is a user-defined function]], identifier:" +
-				" [`default_catalog`.`database1`.`f3`], ignoreIfExists: [false])");
+				" [`default_catalog`.`database1`.`f3`], ignoreIfExists: [false], isTemporary: [false])");
 		}
 	}
 
@@ -344,7 +367,9 @@ public class FunctionITCase extends StreamingTestBase {
 		try {
 			tEnv().sqlUpdate(ddl2);
 		} catch (Exception e) {
-			assertEquals(e.getMessage(), "Temporary system function f5 doesn't exist");
+			assertEquals(
+				e.getMessage(),
+				"Could not drop temporary system function. A function named 'f5' doesn't exist.");
 		}
 	}
 
@@ -398,7 +423,7 @@ public class FunctionITCase extends StreamingTestBase {
 		);
 
 		TestCollectionTableFactory.reset();
-		TestCollectionTableFactory.initData(sourceData, new ArrayList<>(), -1);
+		TestCollectionTableFactory.initData(sourceData);
 
 		String sourceDDL = "create table t1(a int, b varchar, c int) with ('connector' = 'COLLECTION')";
 		String sinkDDL = "create table t2(a int, b varchar, c int) with ('connector' = 'COLLECTION')";
@@ -418,5 +443,582 @@ public class FunctionITCase extends StreamingTestBase {
 
 		tEnv().sqlUpdate("drop table t1");
 		tEnv().sqlUpdate("drop table t2");
+	}
+
+	@Test
+	public void testPrimitiveScalarFunction() throws Exception {
+		final List<Row> sourceData = Arrays.asList(
+			Row.of(1, 1L, "-"),
+			Row.of(2, 2L, "--"),
+			Row.of(3, 3L, "---")
+		);
+
+		final List<Row> sinkData = Arrays.asList(
+			Row.of(1, 3L, "-"),
+			Row.of(2, 6L, "--"),
+			Row.of(3, 9L, "---")
+		);
+
+		TestCollectionTableFactory.reset();
+		TestCollectionTableFactory.initData(sourceData);
+
+		tEnv().sqlUpdate("CREATE TABLE TestTable(i INT NOT NULL, b BIGINT NOT NULL, s STRING) WITH ('connector' = 'COLLECTION')");
+
+		tEnv().createTemporarySystemFunction("PrimitiveScalarFunction", PrimitiveScalarFunction.class);
+		tEnv().sqlUpdate("INSERT INTO TestTable SELECT i, PrimitiveScalarFunction(i, b, s), s FROM TestTable");
+		tEnv().execute("Test Job");
+
+		assertThat(TestCollectionTableFactory.getResult(), equalTo(sinkData));
+	}
+
+	@Test
+	public void testNullScalarFunction() throws Exception {
+		final List<Row> sinkData = Collections.singletonList(
+			Row.of("Boolean", "String", "<<unknown>>", "String", "Object", "Boolean"));
+
+		TestCollectionTableFactory.reset();
+
+		tEnv().sqlUpdate(
+			"CREATE TABLE TestTable(s1 STRING, s2 STRING, s3 STRING, s4 STRING, s5 STRING, s6 STRING) " +
+			"WITH ('connector' = 'COLLECTION')");
+
+		tEnv().createTemporarySystemFunction("ClassNameScalarFunction", ClassNameScalarFunction.class);
+		tEnv().createTemporarySystemFunction("ClassNameOrUnknownScalarFunction", ClassNameOrUnknownScalarFunction.class);
+		tEnv().createTemporarySystemFunction("WildcardClassNameScalarFunction", WildcardClassNameScalarFunction.class);
+		tEnv().sqlUpdate("INSERT INTO TestTable SELECT " +
+			"ClassNameScalarFunction(NULL), " +
+			"ClassNameScalarFunction(CAST(NULL AS STRING)), " +
+			"ClassNameOrUnknownScalarFunction(NULL), " +
+			"ClassNameOrUnknownScalarFunction(CAST(NULL AS STRING)), " +
+			"WildcardClassNameScalarFunction(NULL), " +
+			"WildcardClassNameScalarFunction(CAST(NULL AS BOOLEAN))");
+		tEnv().execute("Test Job");
+
+		assertThat(TestCollectionTableFactory.getResult(), equalTo(sinkData));
+	}
+
+	@Test
+	public void testRowScalarFunction() throws Exception {
+		final List<Row> sourceData = Arrays.asList(
+			Row.of(1, Row.of(1, "1")),
+			Row.of(2, Row.of(2, "2")),
+			Row.of(3, Row.of(3, "3"))
+		);
+
+		TestCollectionTableFactory.reset();
+		TestCollectionTableFactory.initData(sourceData);
+
+		tEnv().sqlUpdate(
+			"CREATE TABLE TestTable(i INT, r ROW<i INT, s STRING>) " +
+			"WITH ('connector' = 'COLLECTION')");
+
+		tEnv().createTemporarySystemFunction("RowScalarFunction", RowScalarFunction.class);
+		// the names of the function input and r differ
+		tEnv().sqlUpdate("INSERT INTO TestTable SELECT i, RowScalarFunction(r) FROM TestTable");
+		tEnv().execute("Test Job");
+
+		assertThat(TestCollectionTableFactory.getResult(), equalTo(sourceData));
+	}
+
+	@Test
+	public void testComplexScalarFunction() throws Exception {
+		final List<Row> sourceData = Arrays.asList(
+			Row.of(1, new byte[]{1, 2, 3}),
+			Row.of(2, new byte[]{2, 3, 4}),
+			Row.of(3, new byte[]{3, 4, 5}),
+			Row.of(null, null)
+		);
+
+		final List<Row> sinkData = Arrays.asList(
+			Row.of(
+				1,
+				"1+2012-12-12 12:12:12.123456789",
+				"[1, 2, 3]+2012-12-12 12:12:12.123456789",
+				new BigDecimal("123.40"),
+				ByteBuffer.wrap(new byte[]{1, 2, 3})),
+			Row.of(
+				2,
+				"2+2012-12-12 12:12:12.123456789",
+				"[2, 3, 4]+2012-12-12 12:12:12.123456789",
+				new BigDecimal("123.40"),
+				ByteBuffer.wrap(new byte[]{2, 3, 4})),
+			Row.of(
+				3,
+				"3+2012-12-12 12:12:12.123456789",
+				"[3, 4, 5]+2012-12-12 12:12:12.123456789",
+				new BigDecimal("123.40"),
+				ByteBuffer.wrap(new byte[]{3, 4, 5})),
+			Row.of(
+				null,
+				"null+2012-12-12 12:12:12.123456789",
+				"null+2012-12-12 12:12:12.123456789",
+				new BigDecimal("123.40"),
+				null)
+		);
+
+		TestCollectionTableFactory.reset();
+		TestCollectionTableFactory.initData(sourceData);
+
+		final RawType<Object> rawType = new RawType<>(
+			Object.class,
+			new KryoSerializer<>(Object.class, new ExecutionConfig()));
+
+		tEnv().sqlUpdate(
+			"CREATE TABLE SourceTable(i INT, b BYTES) " +
+			"WITH ('connector' = 'COLLECTION')");
+		tEnv().sqlUpdate(
+			"CREATE TABLE SinkTable(" +
+			"  i INT, " +
+			"  s1 STRING, " +
+			"  s2 STRING, " +
+			"  d DECIMAL(5, 2)," +
+			"  r " + rawType.asSerializableString() +
+			") " +
+			"WITH ('connector' = 'COLLECTION')");
+
+		tEnv().createTemporarySystemFunction("ComplexScalarFunction", ComplexScalarFunction.class);
+		tEnv().sqlUpdate(
+			"INSERT INTO SinkTable " +
+			"SELECT " +
+			"  i, " +
+			"  ComplexScalarFunction(i, TIMESTAMP '2012-12-12 12:12:12.123456789'), " +
+			"  ComplexScalarFunction(b, TIMESTAMP '2012-12-12 12:12:12.123456789')," +
+			"  ComplexScalarFunction(), " +
+			"  ComplexScalarFunction(b) " +
+			"FROM SourceTable");
+		tEnv().execute("Test Job");
+
+		assertThat(TestCollectionTableFactory.getResult(), equalTo(sinkData));
+	}
+
+	@Test
+	public void testCustomScalarFunction() throws Exception {
+		final List<Row> sourceData = Arrays.asList(
+			Row.of(1),
+			Row.of(2),
+			Row.of(3),
+			Row.of((Integer) null)
+		);
+
+		final List<Row> sinkData = Arrays.asList(
+			Row.of(1, 1, 5),
+			Row.of(2, 2, 5),
+			Row.of(3, 3, 5),
+			Row.of(null, null, 5)
+		);
+
+		TestCollectionTableFactory.reset();
+		TestCollectionTableFactory.initData(sourceData);
+
+		tEnv().sqlUpdate("CREATE TABLE SourceTable(i INT) WITH ('connector' = 'COLLECTION')");
+		tEnv().sqlUpdate("CREATE TABLE SinkTable(i1 INT, i2 INT, i3 INT) WITH ('connector' = 'COLLECTION')");
+
+		tEnv().createTemporarySystemFunction("CustomScalarFunction", CustomScalarFunction.class);
+		tEnv().sqlUpdate(
+			"INSERT INTO SinkTable " +
+			"SELECT " +
+			"  i, " +
+			"  CustomScalarFunction(i), " +
+			"  CustomScalarFunction(CAST(NULL AS INT), 5, i, i) " +
+			"FROM SourceTable");
+		tEnv().execute("Test Job");
+
+		assertThat(TestCollectionTableFactory.getResult(), equalTo(sinkData));
+	}
+
+	@Test
+	public void testRawLiteralScalarFunction() throws Exception {
+		final List<Row> sourceData = Arrays.asList(
+			Row.of(1, DayOfWeek.MONDAY),
+			Row.of(2, DayOfWeek.FRIDAY),
+			Row.of(null, null)
+		);
+
+		final Row[] sinkData = new Row[]{
+			Row.of(
+				1,
+				"MONDAY",
+				DayOfWeek.MONDAY),
+			Row.of(
+				1,
+				"MONDAY",
+				DayOfWeek.MONDAY),
+			Row.of(
+				2,
+				"FRIDAY",
+				DayOfWeek.FRIDAY),
+			Row.of(
+				2,
+				"FRIDAY",
+				DayOfWeek.FRIDAY),
+			Row.of(
+				null,
+				null,
+				null),
+			Row.of(
+				null,
+				null,
+				null)
+		};
+
+		TestCollectionTableFactory.reset();
+		TestCollectionTableFactory.initData(sourceData);
+
+		final RawType<DayOfWeek> rawType = new RawType<>(
+			DayOfWeek.class,
+			new KryoSerializer<>(DayOfWeek.class, new ExecutionConfig()));
+
+		tEnv().sqlUpdate(
+			"CREATE TABLE SourceTable(" +
+			"  i INT, " +
+			"  r " + rawType.asSerializableString() +
+			") " +
+			"WITH ('connector' = 'COLLECTION')");
+		tEnv().sqlUpdate(
+			"CREATE TABLE SinkTable(" +
+			"  i INT, " +
+			"  s STRING, " +
+			"  r " + rawType.asSerializableString() +
+			") " +
+			"WITH ('connector' = 'COLLECTION')");
+
+		tEnv().createTemporarySystemFunction("RawLiteralScalarFunction", RawLiteralScalarFunction.class);
+		tEnv().sqlUpdate(
+			"INSERT INTO SinkTable " +
+			"  (SELECT " +
+			"    i, " +
+			"    RawLiteralScalarFunction(r, TRUE), " +
+			"    RawLiteralScalarFunction(r, FALSE) " +
+			"   FROM SourceTable)" +
+			"UNION ALL " +
+			"  (SELECT " +
+			"    i, " +
+			"    RawLiteralScalarFunction(r, TRUE), " +
+			"    RawLiteralScalarFunction(r, FALSE) " +
+			"  FROM SourceTable)");
+		tEnv().execute("Test Job");
+
+		assertThat(TestCollectionTableFactory.getResult(), containsInAnyOrder(sinkData));
+	}
+
+	@Test
+	public void testInvalidCustomScalarFunction() {
+		tEnv().sqlUpdate("CREATE TABLE SinkTable(s STRING) WITH ('connector' = 'COLLECTION')");
+
+		tEnv().createTemporarySystemFunction("CustomScalarFunction", CustomScalarFunction.class);
+		try {
+			tEnv().sqlUpdate(
+				"INSERT INTO SinkTable " +
+				"SELECT CustomScalarFunction('test')");
+			// trigger translation
+			tEnv().explain(false);
+			fail();
+		} catch (CodeGenException e) {
+			assertThat(
+				e,
+				hasMessage(
+					equalTo(
+						"Could not find an implementation method in class '" + CustomScalarFunction.class.getCanonicalName() +
+						"' for function 'CustomScalarFunction' that matches the following signature: \n" +
+						"java.lang.String eval(java.lang.String)")));
+		}
+	}
+
+	@Test
+	public void testRowTableFunction() throws Exception {
+		final List<Row> sourceData = Arrays.asList(
+			Row.of("1,2,3"),
+			Row.of("2,3,4"),
+			Row.of("3,4,5"),
+			Row.of((String) null)
+		);
+
+		final List<Row> sinkData = Arrays.asList(
+			Row.of("1,2,3", new String[]{"1", "2", "3"}),
+			Row.of("2,3,4", new String[]{"2", "3", "4"}),
+			Row.of("3,4,5", new String[]{"3", "4", "5"})
+		);
+
+		TestCollectionTableFactory.reset();
+		TestCollectionTableFactory.initData(sourceData);
+
+		tEnv().sqlUpdate("CREATE TABLE SourceTable(s STRING) WITH ('connector' = 'COLLECTION')");
+		tEnv().sqlUpdate("CREATE TABLE SinkTable(s STRING, sa ARRAY<STRING> NOT NULL) WITH ('connector' = 'COLLECTION')");
+
+		tEnv().createTemporarySystemFunction("RowTableFunction", RowTableFunction.class);
+		tEnv().sqlUpdate("INSERT INTO SinkTable SELECT t.s, t.sa FROM SourceTable, LATERAL TABLE(RowTableFunction(s)) t");
+		tEnv().execute("Test Job");
+
+		assertThat(TestCollectionTableFactory.getResult(), equalTo(sinkData));
+	}
+
+	@Test
+	public void testDynamicTableFunction() throws Exception {
+		final Row[] sinkData = new Row[]{
+			Row.of("Test is a string"),
+			Row.of("42"),
+			Row.of((String) null)
+		};
+
+		TestCollectionTableFactory.reset();
+
+		tEnv().sqlUpdate("CREATE TABLE SinkTable(s STRING) WITH ('connector' = 'COLLECTION')");
+
+		tEnv().createTemporarySystemFunction("DynamicTableFunction", DynamicTableFunction.class);
+		tEnv().sqlUpdate(
+			"INSERT INTO SinkTable " +
+			"SELECT T1.s FROM TABLE(DynamicTableFunction('Test')) AS T1(s) " +
+			"UNION ALL " +
+			"SELECT CAST(T2.i AS STRING) FROM TABLE(DynamicTableFunction(42)) AS T2(i)" +
+			"UNION ALL " +
+			"SELECT CAST(T3.i AS STRING) FROM TABLE(DynamicTableFunction(CAST(NULL AS INT))) AS T3(i)");
+		tEnv().execute("Test Job");
+
+		assertThat(TestCollectionTableFactory.getResult(), containsInAnyOrder(sinkData));
+	}
+
+	@Test
+	public void testInvalidUseOfScalarFunction() {
+		tEnv().sqlUpdate("CREATE TABLE SinkTable(s STRING) WITH ('connector' = 'COLLECTION')");
+
+		tEnv().createTemporarySystemFunction("PrimitiveScalarFunction", PrimitiveScalarFunction.class);
+		try {
+			tEnv().sqlUpdate(
+				"INSERT INTO SinkTable " +
+				"SELECT * FROM TABLE(PrimitiveScalarFunction(1, 2, '3'))");
+			// trigger translation
+			tEnv().explain(false);
+			fail();
+		} catch (ValidationException e) {
+			assertThat(
+				e,
+				hasMessage(
+					containsString(
+						"No match found for function signature PrimitiveScalarFunction(<NUMERIC>, <NUMERIC>, <CHARACTER>)")));
+		}
+	}
+
+	@Test
+	public void testInvalidUseOfSystemScalarFunction() {
+		tEnv().sqlUpdate("CREATE TABLE SinkTable(s STRING) WITH ('connector' = 'COLLECTION')");
+
+		try {
+			tEnv().sqlUpdate(
+				"INSERT INTO SinkTable " +
+				"SELECT * FROM TABLE(MD5('3'))");
+			// trigger translation
+			tEnv().explain(false);
+			fail();
+		} catch (ValidationException e) {
+			assertThat(
+				e,
+				hasMessage(
+					containsString(
+						"Currently, only table functions can emit rows.")));
+		}
+	}
+
+	@Test
+	public void testInvalidUseOfTableFunction() {
+		tEnv().sqlUpdate("CREATE TABLE SinkTable(s STRING) WITH ('connector' = 'COLLECTION')");
+
+		tEnv().createTemporarySystemFunction("RowTableFunction", RowTableFunction.class);
+		try {
+			tEnv().sqlUpdate(
+				"INSERT INTO SinkTable " +
+				"SELECT RowTableFunction('test')");
+			fail();
+		} catch (ValidationException e) {
+			assertThat(
+				e,
+				hasMessage(
+					containsString(
+						"No match found for function signature RowTableFunction(<CHARACTER>)")));
+		}
+	}
+
+	// --------------------------------------------------------------------------------------------
+	// Test functions
+	// --------------------------------------------------------------------------------------------
+
+	/**
+	 * Function that takes and returns primitives.
+	 */
+	public static class PrimitiveScalarFunction extends ScalarFunction {
+		public long eval(int i, long l, String s) {
+			return i + l + s.length();
+		}
+	}
+
+	/**
+	 * Function that takes and returns rows.
+	 */
+	public static class RowScalarFunction extends ScalarFunction {
+		public @DataTypeHint("ROW<f0 INT, f1 STRING>") Row eval(
+				@DataTypeHint("ROW<f0 INT, f1 STRING>") Row row) {
+			return row;
+		}
+	}
+
+	/**
+	 * Function that is overloaded and takes use of annotations.
+	 */
+	public static class ComplexScalarFunction extends ScalarFunction {
+		public String eval(@DataTypeHint(inputGroup = InputGroup.ANY) Object o, java.sql.Timestamp t) {
+			return StringUtils.arrayAwareToString(o) + "+" + t.toString();
+		}
+
+		public @DataTypeHint("DECIMAL(5, 2)") BigDecimal eval() {
+			return new BigDecimal("123.4"); // 1 digit is missing
+		}
+
+		public @DataTypeHint("RAW") ByteBuffer eval(byte[] bytes) {
+			if (bytes == null) {
+				return null;
+			}
+			return ByteBuffer.wrap(bytes);
+		}
+	}
+
+	/**
+	 * A function that returns either STRING or RAW type depending on a literal.
+	 */
+	public static class RawLiteralScalarFunction extends ScalarFunction {
+		public Object eval(DayOfWeek dayOfWeek, Boolean asString) {
+			if (dayOfWeek == null) {
+				return null;
+			}
+			if (asString) {
+				return dayOfWeek.toString();
+			}
+			return dayOfWeek;
+		}
+
+		@Override
+		public TypeInference getTypeInference(DataTypeFactory typeFactory) {
+			final DataType dayOfWeekDataType =
+				DataTypes.RAW(DayOfWeek.class).toDataType(typeFactory);
+			return TypeInference.newBuilder()
+				.typedArguments(
+					dayOfWeekDataType,
+					DataTypes.BOOLEAN().notNull())
+				.outputTypeStrategy((callContext -> {
+					final boolean asString = callContext.getArgumentValue(1, Boolean.class)
+						.orElse(false);
+					if (asString) {
+						return Optional.of(DataTypes.STRING());
+					}
+					return Optional.of(dayOfWeekDataType);
+				}))
+				.build();
+		}
+	}
+
+	/**
+	 * Function that has a custom type inference that is broader than the actual implementation.
+	 */
+	public static class CustomScalarFunction extends ScalarFunction {
+		public Integer eval(Integer... args) {
+			for (Integer o : args) {
+				if (o != null) {
+					return o;
+				}
+			}
+			return null;
+		}
+
+		@Override
+		public TypeInference getTypeInference(DataTypeFactory typeFactory) {
+			return TypeInference.newBuilder()
+				.outputTypeStrategy(TypeStrategies.argument(0))
+				.build();
+		}
+	}
+
+	/**
+	 * Function that returns a row.
+	 */
+	@FunctionHint(output = @DataTypeHint("ROW<s STRING, sa ARRAY<STRING> NOT NULL>"))
+	public static class RowTableFunction extends TableFunction<Row> {
+		public void eval(String s) {
+			if (s == null) {
+				collect(null);
+			} else {
+				collect(Row.of(s, s.split(",")));
+			}
+		}
+	}
+
+	/**
+	 * Function that returns a string or integer.
+	 */
+	public static class DynamicTableFunction extends TableFunction<Object> {
+		@FunctionHint(output = @DataTypeHint("STRING"))
+		public void eval(String s) {
+			if (s == null) {
+				fail();
+			} else {
+				collect(s + " is a string");
+			}
+		}
+
+		@FunctionHint(output = @DataTypeHint("INT"))
+		public void eval(Integer i) {
+			if (i == null) {
+				collect(null);
+			} else {
+				collect(i);
+			}
+		}
+	}
+
+	/**
+	 * Function that returns which method has been called.
+	 *
+	 * <p>{@code f(NULL)} is determined by alphabetical method signature order.
+	 */
+	@SuppressWarnings("unused")
+	public static class ClassNameScalarFunction extends ScalarFunction {
+
+		public String eval(Integer i) {
+			return "Integer";
+		}
+
+		public String eval(Boolean b) {
+			return "Boolean";
+		}
+
+		public String eval(String s) {
+			return "String";
+		}
+	}
+
+	/**
+	 * Function that returns which method has been called including {@code unknown}.
+	 */
+	@SuppressWarnings("unused")
+	public static class ClassNameOrUnknownScalarFunction extends ClassNameScalarFunction {
+
+		public String eval(@DataTypeHint("NULL") Object o) {
+			return "<<unknown>>";
+		}
+	}
+
+	/**
+	 * Function that returns which method has been called but with default input type inference.
+	 */
+	@SuppressWarnings("unused")
+	public static class WildcardClassNameScalarFunction extends ClassNameScalarFunction {
+
+		public String eval(Object o) {
+			return "Object";
+		}
+
+		@Override
+		public TypeInference getTypeInference(DataTypeFactory typeFactory) {
+			return TypeInference.newBuilder()
+				.outputTypeStrategy(TypeStrategies.explicit(DataTypes.STRING()))
+				.build();
+		}
 	}
 }
